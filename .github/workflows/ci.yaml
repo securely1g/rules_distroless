@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   test:
+    if: ${{ github.repository == 'bazel-contrib/rules_distroless' }}
     strategy:
       fail-fast: false
       matrix:
@@ -64,7 +65,7 @@ jobs:
   # Single job to use as a required status check, since the matrix job names
   # above vary and can't be pinned individually in branch protection rules.
   ci:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.repository == 'bazel-contrib/rules_distroless' }}
     needs: [test]
     runs-on: ubuntu-latest
     steps:

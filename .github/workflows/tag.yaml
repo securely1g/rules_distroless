@@ -17,6 +17,7 @@ on:
     - cron: "0 15 2,16 * *"
 jobs:
   tag:
+    if: ${{ github.repository == 'bazel-contrib/rules_distroless' }}
     permissions:
       contents: write # allow create tag
     runs-on: ubuntu-latest
@@ -38,7 +39,7 @@ jobs:
       tag_name: ${{ needs.tag.outputs.new-tag-version }}
     secrets:
       BCR_PUBLISH_TOKEN: ${{ secrets.BCR_PUBLISH_TOKEN }}
-    if: needs.tag.outputs.new-tag == 'true' && needs.tag.outputs.new-tag-version-type != 'major'
+    if: github.repository == 'bazel-contrib/rules_distroless' && needs.tag.outputs.new-tag == 'true' && needs.tag.outputs.new-tag-version-type != 'major'
     permissions:
       id-token: write
       attestations: write

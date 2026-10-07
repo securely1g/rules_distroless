@@ -16,6 +16,7 @@ def _flatten_impl(ctx):
     args.add(str(ctx.attr.deduplicate))
     args.add(ctx.executable._gawk.path)
     args.add(coreutils.coreutils_info.bin)
+    args.add(ctx.file.tar_manifest.path if ctx.file.tar_manifest else "")
     args.add_all(tar_lib.DEFAULT_ARGS)
     args.add("--create")
     tar_lib.common.add_compression_args(ctx.attr.compress, args)
@@ -24,7 +25,7 @@ def _flatten_impl(ctx):
 
     ctx.actions.run(
         executable = ctx.executable._flatten_sh,
-        inputs = ctx.files.tars,
+        inputs = ctx.files.tars + ([ctx.file.tar_manifest] if ctx.file.tar_manifest else []),
         outputs = [output],
         tools = [
             bsdtar.default.files,
@@ -48,6 +49,17 @@ flatten = rule(
             mandatory = True,
             allow_empty = False,
             doc = "List of tars to flatten",
+        ),
+        "tar_manifest": attr.label(
+            allow_single_file = True,
+            doc = """Optional ordered subset of tars selected at execution time.
+
+Each line must be the exact execution-root-relative path of a declared tar.
+Unknown paths, duplicate paths and blank lines are rejected. An empty file
+selects no archives and produces an empty tar. All candidate tars remain
+declared action inputs. Without this attribute, all tars are flattened in
+their declared order.
+            """,
         ),
         "deduplicate": attr.bool(doc = """\
 EXPERIMENTAL: We may change or remove it without a notice.

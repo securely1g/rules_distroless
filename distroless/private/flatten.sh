@@ -5,7 +5,47 @@ bsdtar="$1";
 deduplicate="$2";
 readonly awk="$3"
 readonly coreutils="$4"
-shift 4;
+readonly tar_manifest="$5"
+shift 5;
+
+if [[ -n "$tar_manifest" ]]; then
+    declared=()
+    arguments=()
+    for arg in "$@"; do
+        if [[ "$arg" == "@"* ]]; then
+            declared+=("${arg:1}")
+        else
+            arguments+=("$arg")
+        fi
+    done
+    selected=()
+    while IFS= read -r path || [[ -n "$path" ]]; do
+        known=false
+        for candidate in "${declared[@]}"; do
+            if [[ "$path" == "$candidate" ]]; then
+                known=true
+                break
+            fi
+        done
+        if [[ "$known" != true ]]; then
+            echo "flatten: tar_manifest contains an undeclared tar: $path" >&2
+            exit 1
+        fi
+        for candidate in "${selected[@]}"; do
+            if [[ "$path" == "$candidate" ]]; then
+                echo "flatten: tar_manifest contains a duplicate tar: $path" >&2
+                exit 1
+            fi
+        done
+        selected+=("$path")
+        arguments+=("@$path")
+    done < "$tar_manifest"
+    # bsdtar requires an explicit empty file list when no archives are selected.
+    if [[ ${#selected[@]} -eq 0 ]]; then
+        arguments+=(--files-from /dev/null)
+    fi
+    set -- "${arguments[@]}"
+fi
 
 # Deduplication requested, use this complex pipeline to deduplicate.
 if [[ "$deduplicate" == "True" ]]; then

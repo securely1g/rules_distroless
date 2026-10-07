@@ -1,0 +1,151 @@
+name: APT layers
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apt-layers-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: APT layers (${{ matrix.arch }})
+    if: ${{ github.repository == 'securely1g/rules_distroless' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: AMD64
+            runner: ubuntu-24.04
+            machine: x86_64
+            debian_arch: amd64
+            bazel_arch: x86_64
+            bazel_sha: 61d89402f0368e64b6c827be5de79d8e65382e8124c3cbb97325611a1851392e
+          - arch: ARM64
+            runner: ubuntu-24.04-arm
+            machine: aarch64
+            debian_arch: arm64
+            bazel_arch: arm64
+            bazel_sha: b7f2a85595e8a87d54843bc656c1e379fd9b8c1b5f783dc41717c1d7eb7cc49f
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    container:
+      image: debian:trixie-20260918@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install native validation tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential ca-certificates curl git python3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify native execution and install Bazel
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "${{ matrix.machine }}"
+          test "$(dpkg --print-architecture)" = "${{ matrix.debian_arch }}"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          curl --fail --location --retry 3 --output /tmp/bazel \
+            https://releases.bazel.build/8.5.1/release/bazel-8.5.1-linux-${{ matrix.bazel_arch }}
+          printf '%s  %s\n' '${{ matrix.bazel_sha }}' /tmp/bazel | sha256sum --check --strict
+          install -m 0755 /tmp/bazel /usr/local/bin/bazel
+      - name: Audit and test explicit tar-only targets
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          git rev-parse HEAD HEAD^{tree} > artifacts/revisions.txt
+          uname -a > artifacts/uname.txt
+          dpkg --print-architecture > artifacts/architecture.txt
+          cp /etc/os-release artifacts/os-release
+          bazel --version > artifacts/bazel-version.txt
+          tests=(
+            //distroless/tests:flatten/merge_simple
+            //distroless/tests:flatten/deduplicate
+            //distroless/tests:flatten/gzip_compression
+            //distroless/tests:flatten_manifest_test
+            //apt/tests:locked_closure_test
+            //apt/tests:foreign_dependency_test
+            //apt/tests:foreign_all_key_test
+            //apt/tests:native_package_all_key_test
+            //apt/tests:missing_dependency_test
+            //apt/tests:conflicting_version_test
+            //apt/tests:missing_source_hash_test
+            //apt/tests:partial_content_hash_test
+            //apt/tests:metadata_mismatch_test
+            //apt/tests:locked_import_test
+          )
+          negative=(
+            //distroless/tests:flatten_manifest_unknown
+            //distroless/tests:flatten_manifest_duplicate
+            //distroless/tests:flatten_manifest_blank
+          )
+          flags=(--enable_bzlmod --lockfile_mode=update --jobs=4 --check_direct_dependencies=off --noincompatible_disallow_empty_glob)
+          printf '%s\n' "${tests[@]}" "${negative[@]}" > artifacts/targets.txt
+          bazel --ignore_all_rc_files aquery "${flags[@]}" --output=jsonproto \
+            "deps(set(${tests[*]} ${negative[*]}))" > artifacts/actions.json
+          python3 - <<'PY'
+          import collections, json, re
+          from pathlib import Path
+          graph = json.loads(Path('artifacts/actions.json').read_text())
+          fragments = {x['id']: x for x in graph['pathFragments']}
+          def path(identifier):
+              node = fragments[identifier]
+              return (path(node['parentId']) + '/' if node.get('parentId') else '') + node['label']
+          artifacts = {x['id']: path(x['pathFragmentId']) for x in graph['artifacts']}
+          actions = graph['actions']
+          assert actions, 'empty action graph'
+          outputs = [artifacts[i] for action in actions for i in action.get('outputIds', [])]
+          forbidden = []
+          for action in actions:
+              command = ' '.join(action.get('arguments', []))
+              if (re.search(r'(?:^|[/\s])(?:make|gmake|dpkg-buildpackage)(?:\s|$)', command) or
+                  ('dpkg-deb' in command and re.search(r'(?:--build|(?:^|\s)-b(?:\s|$))', command))):
+                  forbidden.append(action.get('mnemonic'))
+          receipt = dict(action_count=len(actions),
+                         mnemonics=dict(collections.Counter(x['mnemonic'] for x in actions)),
+                         deb_outputs=[x for x in outputs if x.endswith('.deb')],
+                         packaging_wrappers=forbidden)
+          Path('artifacts/action-audit.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          assert not receipt['deb_outputs'] and not forbidden, receipt
+          PY
+          bazel --ignore_all_rc_files test "${flags[@]}" --nocache_test_results --test_output=all \
+            --build_event_json_file="$PWD/artifacts/tests.bep.json" "${tests[@]}" \
+            2>&1 | tee artifacts/tests.log
+          for target in "${negative[@]}"; do
+            name=${target##*:}
+            if bazel --ignore_all_rc_files build "${flags[@]}" "$target" > "artifacts/$name.log" 2>&1; then
+              echo "Expected manifest rejection: $target" >&2
+              exit 1
+            fi
+            if [[ "$name" == *duplicate ]]; then
+              grep -F 'tar_manifest contains a duplicate tar:' "artifacts/$name.log"
+            else
+              grep -F 'tar_manifest contains an undeclared tar:' "artifacts/$name.log"
+            fi
+          done
+          cp MODULE.bazel MODULE.bazel.lock artifacts/
+          cp -aL bazel-testlogs artifacts/testlogs
+          mkdir -p artifacts/outputs
+          for name in default full ordered subset empty deduplicated compressed empty_deduplicated; do
+            output=$(bazel --ignore_all_rc_files cquery "${flags[@]}" --output=files "//distroless/tests:flatten_manifest_${name}_output")
+            test -f "$output"
+            cp "$output" artifacts/outputs/
+          done
+          find artifacts/outputs -type f -exec sha256sum {} + > artifacts/output-sha256.txt
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apt-layers-${{ matrix.arch }}-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14

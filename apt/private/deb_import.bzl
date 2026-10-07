@@ -183,7 +183,7 @@ def _remap_linkopts(rctx, extract_dir, so_regular_files, self_files, depends_fil
 
     return result.linkopts
 
-def _discover_contents(rctx, depends_on, depends_file_map, target_name, mergedusr = False):
+def _discover_contents(rctx, depends_on, depends_file_map, target_name, mergedusr = False, repo_prefix = ""):
     archive = data_archive(rctx)
     tar = host_bsdtar(rctx)
     result = rctx.execute([tar, "-tvf", archive])
@@ -314,7 +314,7 @@ def _discover_contents(rctx, depends_on, depends_file_map, target_name, mergedus
     for dep in depends_on:
         (suite, name, arch, version) = lockfile.parse_package_key(dep)
         deps.append(
-            "@%s//:%s_wodeps" % (util.package_repo_name(dep, mergedusr = mergedusr), name.removesuffix("-dev")),
+            "@%s//:%s_wodeps" % (repo_prefix + util.package_repo_name(dep, mergedusr = mergedusr), name.removesuffix("-dev")),
         )
 
     pkgconfigs = []
@@ -473,6 +473,7 @@ def _deb_import_impl(rctx):
         provided_by,
         rctx.attr.package_name.removesuffix("-dev"),
         mergedusr = rctx.attr.mergedusr,
+        repo_prefix = rctx.attr.repo_prefix,
     )
 
     foreign_symlinks = {}
@@ -488,7 +489,7 @@ def _deb_import_impl(rctx):
 
     rctx.file("BUILD.bazel", _DEB_IMPORT_BUILD_TMPL.format(
         mergedusr = rctx.attr.mergedusr,
-        depends_on = ["@" + util.package_repo_name(dep_key, mergedusr = rctx.attr.mergedusr) + "//:data" for dep_key in rctx.attr.depends_on],
+        depends_on = ["@" + rctx.attr.repo_prefix + util.package_repo_name(dep_key, mergedusr = rctx.attr.mergedusr) + "//:data" for dep_key in rctx.attr.depends_on],
         target_name = rctx.attr.target_name,
         cc_import_targets = cc_import_targets,
         outs = outs,
@@ -506,5 +507,6 @@ deb_import = repository_rule(
         "mergedusr": attr.bool(),
         "target_name": attr.string(),
         "package_name": attr.string(),
+        "repo_prefix": attr.string(doc = "Internal namespace for independent checked locks."),
     },
 )

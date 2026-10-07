@@ -1,5 +1,6 @@
 load("@bazel_lib//:bzl_library.bzl", "bzl_library")
 load(":flatten_test.bzl", "flatten_tests")
+load(":flatten_manifest_test.bzl", "flatten_manifest_tests")
 load(":locale_test.bzl", "locale_tests")
 
 bzl_library(
@@ -13,5 +14,7 @@ bzl_library(
 )
 
 flatten_tests()
+
+flatten_manifest_tests()
 
 locale_tests()

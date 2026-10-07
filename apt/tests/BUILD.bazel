@@ -5,6 +5,7 @@ load(":extensions_test.bzl", "extensions_tests")
 load(":facts_test.bzl", "facts_tests")
 load(":linker_script_test.bzl", "linker_script_tests")
 load(":lockfile_test.bzl", "lockfile_tests")
+load(":locked_package_set_test.bzl", "locked_import_test", "locked_package_set_tests")
 load(":release_test.bzl", "release_tests")
 load(":resolution_test.bzl", "resolution_tests")
 load(":translate_dependency_set_test.bzl", "translate_dependency_set_tests")
@@ -34,3 +35,13 @@ translate_dependency_set_tests()
 extensions_tests()
 
 util_tests()
+
+exports_files(["locked_test.json"])
+
+locked_package_set_tests()
+
+locked_import_test(
+    name = "locked_import_test",
+    package_set = "@apt_locked_test//:package_set",
+    checked_lock = "locked_test.json",
+)

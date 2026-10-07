@@ -1,0 +1,61 @@
+{
+  "dependency_sets": {
+    "locked_test": {
+      "sets": {
+        "amd64": {
+          "/trixie/media-types:amd64": "13.0.0"
+        },
+        "arm64": {
+          "/trixie/media-types:arm64": "13.0.0"
+        }
+      }
+    }
+  },
+  "facts": {},
+  "packages": {
+    "/trixie/media-types:amd64=13.0.0": {
+      "architecture": "all",
+      "control_sha256": "5e4ba849702e46fe9682d3eb1941d531a1795d8506cb25eea84d8673884f852a",
+      "control_size": 904,
+      "depends_on": [],
+      "filename": "pool/main/m/media-types/media-types_13.0.0_all.deb",
+      "name": "media-types",
+      "payload_sha256": "364e9352a7f11c244bc916266790a198b82cb3af88af513c2912a43f70ca8a3c",
+      "payload_size": 31315,
+      "sha256": "0788e4b0b72db1bcf74a19cb24c3511e7770ad0b341f0f30e361701c3072f53e",
+      "size": 29336,
+      "suite": "trixie",
+      "version": "13.0.0"
+    },
+    "/trixie/media-types:arm64=13.0.0": {
+      "architecture": "all",
+      "control_sha256": "5e4ba849702e46fe9682d3eb1941d531a1795d8506cb25eea84d8673884f852a",
+      "control_size": 904,
+      "depends_on": [],
+      "filename": "pool/main/m/media-types/media-types_13.0.0_all.deb",
+      "name": "media-types",
+      "payload_sha256": "364e9352a7f11c244bc916266790a198b82cb3af88af513c2912a43f70ca8a3c",
+      "payload_size": 31315,
+      "sha256": "0788e4b0b72db1bcf74a19cb24c3511e7770ad0b341f0f30e361701c3072f53e",
+      "size": 29336,
+      "suite": "trixie",
+      "version": "13.0.0"
+    }
+  },
+  "sources": {
+    "trixie": {
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "components": [
+        "main"
+      ],
+      "types": [],
+      "uris": [
+        "https://snapshot.debian.org/archive/debian/20260727T143429Z"
+      ]
+    }
+  },
+  "version": 2
+}
