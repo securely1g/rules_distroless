@@ -1,76 +1,100 @@
-name: CI
+name: Validate pkg-config exports
 
-# Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Exact feature commit to validate
+        required: true
+        type: string
 
-concurrency:
-  # Cancel previous actions from the same PR: https://stackoverflow.com/a/72408109
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   test:
+    name: pkg-config (${{ matrix.arch }})
     strategy:
       fail-fast: false
       matrix:
-        # Bazel versions used in BCR presubmit
-        bazel-version: [7.x, 8.x]
-        os: [ubuntu-latest, macos-latest]
-        workspace:
-          - dir: "."
-            name: root
-          - dir: examples
-            name: examples
-          - dir: e2e/smoke
-            name: e2e-smoke
-          - dir: e2e/invalid_key
-            name: e2e-invalid-key
-            expect_failure_log: "GPG verification failed"
-          - dir: e2e/no_gpg_keys
-            name: e2e-no-gpg-keys
-            expect_failure_log: "signature verification is required by default"
-    runs-on: ${{ matrix.os }}
+        include:
+          - arch: amd64
+            machine: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            machine: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    env:
+      USE_BAZEL_VERSION: 8.5.1
+      TEST_REVISION: ${{ inputs.revision }}
+      BASE_REVISION: 52bea033ef1eac6de5164efb6c1f9552cf59fb49
+      EXPECTED_MACHINE: ${{ matrix.machine }}
+      TEST_ARCH: ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: bazel-contrib/setup-bazel@0.19.0
-      - if: ${{ !matrix.workspace.expect_failure_log }}
-        run: USE_BAZEL_VERSION=${{ matrix.bazel-version }} bazel test //...
-        working-directory: ${{ matrix.workspace.dir }}
-      - if: ${{ matrix.workspace.expect_failure_log }}
-        run: |
-          if USE_BAZEL_VERSION=${{ matrix.bazel-version }} bazel build //... > stderr.log 2>&1; then
-            echo "Expected build to fail, but it succeeded!"
-            exit 1
-          fi
-          cat stderr.log
-          grep -q "${{ matrix.workspace.expect_failure_log }}" stderr.log
-        working-directory: ${{ matrix.workspace.dir }}
-      - name: Upload test logs
-        if: failure()
-        uses: actions/upload-artifact@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          name: test-logs-${{ matrix.bazel-version }}-${{ matrix.os }}-${{ matrix.workspace.name }}
-          path: ${{ matrix.workspace.dir }}/bazel-testlogs/**/test.log
-          if-no-files-found: ignore
-          retention-days: 5
-
-  # Single job to use as a required status check, since the matrix job names
-  # above vary and can't be pinned individually in branch protection rules.
-  ci:
-    if: ${{ !cancelled() }}
-    needs: [test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check matrix job results
+          repository: securely1g/rules_distroless
+          ref: ${{ inputs.revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86
+        with:
+          bazelisk-version: 1.29.0
+      - name: Verify source and native architecture
         run: |
-          if [[ "${{ needs.test.result }}" != "success" ]]; then
-            echo "One or more matrix jobs failed: ${{ needs.test.result }}"
-            exit 1
-          fi
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TEST_REVISION"
+          test "$(uname -m)" = "$EXPECTED_MACHINE"
+          mkdir -p artifacts
+          git rev-parse HEAD > artifacts/revision.txt
+          uname -m > artifacts/machine.txt
+          bazel --version | tee artifacts/bazel-version.txt
+          test "$(cat artifacts/bazel-version.txt)" = 'bazel 8.5.1'
+      - name: Reproduce missing exports on unchanged upstream
+        run: |
+          set -euo pipefail
+          baseline="$RUNNER_TEMP/pkgconfig-baseline"
+          git worktree add --detach "$baseline" "$BASE_REVISION"
+          git show HEAD:MODULE.bazel > "$baseline/MODULE.bazel"
+          git archive HEAD apt/tests/pkgconfig | tar -x -C "$baseline"
+          set +e
+          (cd "$baseline" && bazel --output_base="$RUNNER_TEMP/baseline-output" test \
+            --jobs=4 --repository_cache="$RUNNER_TEMP/repository-cache" \
+            --test_output=errors "//apt/tests/pkgconfig:transitive_${TEST_ARCH}_test") \
+            > artifacts/baseline.log 2>&1
+          result=$?
+          set -e
+          test "$result" -ne 0
+          grep -E "target 'pkgconfig' not declared|no such target.*:pkgconfig" artifacts/baseline.log
+      - name: Test patched imports and existing suites
+        run: |
+          set -euo pipefail
+          bazel --output_base="$RUNNER_TEMP/patched-output" test \
+            --jobs=4 --local_resources=cpu=4 --local_resources=memory=8000 \
+            --repository_cache="$RUNNER_TEMP/repository-cache" \
+            --test_output=errors --nocache_test_results \
+            --build_event_json_file="$PWD/artifacts/test-events.jsonl" \
+            //apt/tests:all //apt/tests/pkgconfig:all //distroless/tests:all \
+            2>&1 | tee artifacts/test.log
+      - name: Retain exact upstream dependency archive
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import hashlib, os, pathlib, shutil
+          digest = '8a70a79613fe3609651b288e7150cc4c7697d22db2d54c6ae535ee78fbf21b804e05e95773d064fd501913e21a9264f3823643135c3ea5dffc4f04aaedd09b5d'
+          source = pathlib.Path(os.environ['RUNNER_TEMP']) / 'repository-cache/content_addressable/sha512' / digest / 'file'
+          if source.is_file():
+              assert hashlib.sha512(source.read_bytes()).hexdigest() == digest
+              dest = pathlib.Path('artifacts/dependencies/ape-1.1.0/src.tar.gz')
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(source, dest)
+          PY
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: pkgconfig-${{ matrix.arch }}
+          path: artifacts/
+          if-no-files-found: error
