@@ -105,6 +105,12 @@ Available Platforms: {available_platforms}
 """
 
 alias(
+    name = "deb",
+    actual = select({deb_targets}, no_match_error = NO_MATCH_ERROR),
+    visibility = ["//visibility:public"],
+)
+
+alias(
     name = "data",
     actual = select({data_targets}, no_match_error = NO_MATCH_ERROR),
     visibility = ["//visibility:public"],
@@ -152,6 +158,7 @@ RESERVED_TEMPLATE_VARIABLES = [
     "arch",
     "control_targets",
     "data_targets",
+    "deb_targets",
     "deps",
     "name",
     "repo_name",
@@ -257,6 +264,7 @@ Please unify the versions manually, or use separate `apt.install` calls (with di
             format_vars = {
                 "target_name": architecture,
                 "data_targets": '"@%s//:data"' % repo_name,
+                "deb_targets": '"@%s//:deb"' % repo_name,
                 "control_targets": '"@%s//:control"' % repo_name,
                 "src": '"@%s//:data"' % repo_name,
                 "deps": package_deps_for_architecture(packages, package, architecture, mergedusr = rctx.attr.mergedusr),
@@ -301,6 +309,12 @@ Please unify the versions manually, or use separate `apt.install` calls (with di
             "%s/BUILD.bazel" % package_name,
             _PACKAGE_TEMPLATE.format(
                 target_name = package_name,
+                deb_targets = starlark_codegen_utils.to_dict_attr({
+                    # Keep the raw archive API available even when a consumer
+                    # supplies a custom per-architecture package template.
+                    "//:linux_%s" % architecture: "@%s//:deb" % util.package_repo_name(package_key, mergedusr = rctx.attr.mergedusr)
+                    for (architecture, package_key) in info.architectures.items()
+                }),
                 data_targets = starlark_codegen_utils.to_dict_attr({
                     "//:linux_%s" % architecture: "//%s/%s:data" % (package_name, architecture)
                     for architecture in architectures
