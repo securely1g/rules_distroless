@@ -57,7 +57,7 @@ def _locale_impl(ctx):
         tools = [
             bsdtar.default.files,
             coreutils.default.files,
-            ctx.executable._gawk,
+            ctx.attr._gawk[DefaultInfo].files_to_run,
         ],
         arguments = [args],
     )
@@ -86,7 +86,6 @@ locale = rule(
             default = "0.0",
         ),
         "_gawk": attr.label(
-            allow_single_file = True,
             executable = True,
             cfg = "exec",
             default = "@ape//ape:awk",
