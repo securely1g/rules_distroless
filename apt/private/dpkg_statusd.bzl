@@ -27,7 +27,7 @@ def _dpkg_statusd_impl(ctx):
         outputs = [output],
         tools = [
             bsdtar.default.files,
-            ctx.executable._gawk,
+            ctx.attr._gawk[DefaultInfo].files_to_run,
             coreutils.default.files,
         ],
         arguments = [args],
@@ -56,7 +56,6 @@ dpkg_statusd = rule(
             values = tar_lib.common.accepted_compression_types,
         ),
         "_gawk": attr.label(
-            allow_single_file = True,
             executable = True,
             cfg = "exec",
             default = "@ape//ape:awk",
