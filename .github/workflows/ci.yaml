@@ -52,6 +52,14 @@ jobs:
           cat stderr.log
           grep -q "${{ matrix.workspace.expect_failure_log }}" stderr.log
         working-directory: ${{ matrix.workspace.dir }}
+      - name: Retain resolved module inputs
+        if: ${{ always() && !matrix.workspace.expect_failure_log }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: module-lock-${{ matrix.bazel-version }}-${{ matrix.os }}-${{ matrix.workspace.name }}
+          path: ${{ matrix.workspace.dir }}/MODULE.bazel.lock
+          if-no-files-found: error
+          retention-days: 5
       - name: Upload test logs
         if: failure()
         uses: actions/upload-artifact@v7.0.1
