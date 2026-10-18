@@ -1,11 +1,38 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 
 exports_files([
     "dpkg_statusd.sh",
     "dpkg_status.sh",
     "copy.sh.tmpl",
     "package.BUILD.tmpl",
+    "install.sh",
 ])
+
+bzl_library(
+    name = "install",
+    srcs = ["install.bzl"],
+    visibility = ["//apt:__subpackages__"],
+    deps = ["@tar.bzl//tar:tar"],
+)
+
+py_library(
+    name = "installer_lib",
+    srcs = ["install.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "installer",
+    srcs = ["install.py"],
+    main = "install.py",
+)
+
+py_test(
+    name = "install_test",
+    srcs = ["install_test.py"],
+    deps = [":installer_lib"],
+)
 
 bzl_library(
     name = "dpkg_status",

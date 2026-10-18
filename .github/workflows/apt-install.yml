@@ -1,0 +1,76 @@
+name: Native APT installation
+
+on:
+  pull_request:
+    branches: [main, codex/macos-awk-runfiles]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apt-install-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Configure packages and test APT (${{ matrix.architecture }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: amd64
+            machine: x86_64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            machine: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    container:
+      image: debian:trixie-20260918@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c
+      # bwrap creates private mount/PID/network namespaces and initializes
+      # the isolated loopback device. These capabilities are dropped for scripts. Maintainer scripts
+      # run as root only in that private filesystem; no Docker socket is mounted.
+      options: --cap-add=SYS_ADMIN --cap-add=NET_ADMIN --security-opt seccomp=unconfined --security-opt apparmor=unconfined
+    env:
+      USE_BAZEL_VERSION: 8.5.1
+      APT_INSTALL_BUILD_CONTAINER: debian:trixie-20260918@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install verification tools
+        # These runner tools are installed from Debian; their resolved versions
+        # are recorded separately from the checksum-locked image inputs.
+        run: |
+          test "$(uname -m)" = '${{ matrix.machine }}'
+          apt-get update
+          apt-get install -y --no-upgrade --no-install-recommends ca-certificates gcc git libarchive-tools python3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.29.0
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: apt-install-${{ matrix.architecture }}
+          cache-version: "8.5.1"
+      - name: Check initial configuration and real APT transactions
+        working-directory: e2e/apt_install
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          python3 -B -m unittest validate_test -v
+          python3 -B validate.py --execution-environment "$APT_INSTALL_BUILD_CONTAINER" --architecture '${{ matrix.architecture }}' --output "$GITHUB_WORKSPACE/artifacts/apt-install"
+          git diff --exit-code
+      - name: Retain installation and transaction evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: apt-install-${{ matrix.architecture }}
+          path: artifacts/apt-install/
+          if-no-files-found: error
+          retention-days: 14
