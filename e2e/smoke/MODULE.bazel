@@ -71,7 +71,7 @@ apt.install(
         "ca-certificates",
         "coreutils",
         "dpkg",
-        "google-cloud-cli",
+        "google-cloud-cli (= 589.0.0-0)",
         "libncurses6",
         "ncurses-base",
         "nginx-core",
