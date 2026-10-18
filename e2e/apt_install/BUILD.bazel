@@ -1,0 +1,83 @@
+load("@apt_fixture//:architecture.bzl", "ARCHITECTURE")
+load("@rules_distroless//apt:defs.bzl", "apt_install")
+
+_BSDTAR = "@bsd_tar_toolchains_linux_%s//:tar" % ARCHITECTURE
+
+# The isolation executable is a declared input, not whichever bwrap happens
+# to be installed on the execution host. BSD tar only reads the original DEB.
+genrule(
+    name = "bubblewrap",
+    srcs = ["@apt_fixture//:bubblewrap.deb"],
+    outs = ["bwrap"],
+    cmd = "$(location %s) -xOf $(location @apt_fixture//:bubblewrap.deb) data.tar.xz | $(location %s) -xOf - ./usr/bin/bwrap >$@; chmod 0755 $@" % (_BSDTAR, _BSDTAR),
+    executable = True,
+    tools = [_BSDTAR],
+)
+
+apt_install(
+    name = "configured",
+    architecture = ARCHITECTURE,
+    base = "@apt_fixture//:base.tar.gz",
+    bwrap = ":bubblewrap",
+    execution_environment = "debian:trixie-20260918@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c",
+    packages = ["@apt_fixture//:%s.deb" % name for name in [
+        "adduser",
+        "ca-certificates",
+        "less",
+        "libpcre2-16-0",
+        "openssl",
+        "systemd-standalone-sysusers",
+        "systemd-standalone-tmpfiles",
+        "uuid-runtime",
+        "vim-common",
+        "vim-tiny",
+    ]],
+)
+
+filegroup(
+    name = "configuration_receipt",
+    srcs = [":configured"],
+    output_group = "receipt",
+)
+
+# Real source packages can change bytes without changing their Debian version.
+# Damage one installed payload in a private root to test that apt_install uses
+# the selected original DEB instead of accepting an equal version from dpkg.
+# This creates a TAR only; no fixture DEB is built or repacked.
+genrule(
+    name = "changed_installed_payload",
+    srcs = [":configured"],
+    outs = ["changed-installed-payload.tar"],
+    cmd = """set -euo pipefail
+work=$$(mktemp -d)
+trap 'rm -rf "$$work"' EXIT
+"$(location %s)" -xf "$(location :configured)" --numeric-owner --preserve-permissions -C "$$work"
+printf 'deliberately changed installed less\\n' > "$$work/usr/bin/less"
+"$(location %s)" -cf "$@" --format=paxr --numeric-owner -C "$$work" .
+""" % (_BSDTAR, _BSDTAR),
+    tags = ["no-sandbox"],
+    tools = [_BSDTAR],
+)
+
+apt_install(
+    name = "reinstalled",
+    architecture = ARCHITECTURE,
+    base = ":changed_installed_payload",
+    bwrap = ":bubblewrap",
+    execution_environment = "debian:trixie-20260918@sha256:9cc080028c43b27d2074d63a5f9caf7166d731494965616c1a6d2827a004585c",
+    packages = ["@apt_fixture//:less.deb"],
+)
+
+filegroup(
+    name = "reinstallation_receipt",
+    srcs = [":reinstalled"],
+    output_group = "receipt",
+)
+
+filegroup(
+    name = "transaction_packages",
+    srcs = [
+        "@apt_fixture//:hello-0.deb",
+        "@apt_fixture//:hello-1.deb",
+    ],
+)
