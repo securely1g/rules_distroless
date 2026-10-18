@@ -1,0 +1,220 @@
+{
+  "architectures": {
+    "amd64": {
+      "base": {
+        "bytes": 49393200,
+        "sha256": "4846f29007305297af653c57bf9b60ba8f676a38695c68d98460063442581671",
+        "url": "https://raw.githubusercontent.com/debuerreotype/docker-debian-artifacts/a3751996111ce2c1c904050c84440184535e23b1/trixie/oci/blobs/rootfs.tar.gz"
+      },
+      "index": {
+        "sha256": "7778d3e3f303b7ddb8ce0fe7c8d57473a076c6bf2e8f241f75421d2396352498",
+        "url": "https://deb.debian.org/debian/dists/trixie/main/binary-amd64/Packages.xz"
+      },
+      "packages": {
+        "adduser": {
+          "architecture": "all",
+          "bytes": 190932,
+          "package": "adduser",
+          "sha256": "e50984d2e1ef6300e3fd51303839842189a077b10cb5cadff1923df10c61c493",
+          "url": "https://deb.debian.org/debian/pool/main/a/adduser/adduser_3.152_all.deb",
+          "version": "3.152"
+        },
+        "bubblewrap": {
+          "architecture": "amd64",
+          "bytes": 56876,
+          "package": "bubblewrap",
+          "sha256": "70aca4fa8daeacb677ec00e8063eb586f08ae3d94b1f11e684370b5524c43431",
+          "url": "https://deb.debian.org/debian/pool/main/b/bubblewrap/bubblewrap_0.12.0-1~deb13u1_amd64.deb",
+          "version": "0.12.0-1~deb13u1"
+        },
+        "ca-certificates": {
+          "architecture": "all",
+          "bytes": 161704,
+          "package": "ca-certificates",
+          "sha256": "ef590f89563aa4b46c8260d49d1cea0fc1b181d19e8df3782694706adf05c184",
+          "url": "https://deb.debian.org/debian/pool/main/c/ca-certificates/ca-certificates_20250419_all.deb",
+          "version": "20250419"
+        },
+        "less": {
+          "architecture": "amd64",
+          "bytes": 161148,
+          "package": "less",
+          "sha256": "ba3c216e68298a2d375d4e386baa935e245f0f23ddb74502b12582f8de061d4f",
+          "url": "https://deb.debian.org/debian/pool/main/l/less/less_668-1_amd64.deb",
+          "version": "668-1"
+        },
+        "libpcre2-16-0": {
+          "architecture": "amd64",
+          "bytes": 281340,
+          "package": "libpcre2-16-0",
+          "sha256": "0343948654468fc4b273077c464cb77afeee29fc493c0d4c9d81cd19d5bc4e23",
+          "url": "https://deb.debian.org/debian/pool/main/p/pcre2/libpcre2-16-0_10.46-1~deb13u2_amd64.deb",
+          "version": "10.46-1~deb13u2"
+        },
+        "openssl": {
+          "architecture": "amd64",
+          "bytes": 1507300,
+          "package": "openssl",
+          "sha256": "4ff006f431d8c2e69fa736885a3b6e779f2448535f69dbde821d9f0ff87ad8ea",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.7-1~deb13u2_amd64.deb",
+          "version": "3.5.7-1~deb13u2"
+        },
+        "systemd-standalone-sysusers": {
+          "architecture": "amd64",
+          "bytes": 170972,
+          "package": "systemd-standalone-sysusers",
+          "sha256": "275f9d8db80664b887ee717fbd3b507c95e11b7805f4223a42a9534f403ba314",
+          "url": "https://deb.debian.org/debian/pool/main/s/systemd/systemd-standalone-sysusers_257.13-1~deb13u1_amd64.deb",
+          "version": "257.13-1~deb13u1"
+        },
+        "uuid-runtime": {
+          "architecture": "amd64",
+          "bytes": 60744,
+          "package": "uuid-runtime",
+          "sha256": "826690419ef231e93d3d756ab19835ebd0fe3029bb1314987fd8f76fd04c6983",
+          "url": "https://deb.debian.org/debian/pool/main/u/util-linux/uuid-runtime_2.41.5-0+deb13u1_amd64.deb",
+          "version": "2.41.5-0+deb13u1"
+        },
+        "vim-common": {
+          "architecture": "all",
+          "bytes": 420760,
+          "package": "vim-common",
+          "sha256": "bcf7e3e675cbc4eed1f444ea3a6dfbf420eae141615b0d35cee24cf23e18aa18",
+          "url": "https://deb.debian.org/debian/pool/main/v/vim/vim-common_9.1.1230-2_all.deb",
+          "version": "2:9.1.1230-2"
+        },
+        "vim-tiny": {
+          "architecture": "amd64",
+          "bytes": 775840,
+          "package": "vim-tiny",
+          "sha256": "675534b5adc7b92603287feac3cbfd5cbb4f5f0dc301878e40e1d90a73556f64",
+          "url": "https://deb.debian.org/debian/pool/main/v/vim/vim-tiny_9.1.1230-2_amd64.deb",
+          "version": "2:9.1.1230-2"
+        }
+      },
+      "transactions": [
+        {
+          "bytes": 53080,
+          "sha256": "2e6e2f1a0007dc43bc91c273fd36e91e40a4f1c2765a03eca68b70a42103878a",
+          "url": "https://deb.debian.org/debian/pool/main/h/hello/hello_2.10-3_amd64.deb",
+          "version": "2.10-3"
+        },
+        {
+          "bytes": 53228,
+          "sha256": "4536aabbb75ec21ffe161099ee4b97274945770bdb0682e25ec322421211ca5e",
+          "url": "https://deb.debian.org/debian/pool/main/h/hello/hello_2.10-5_amd64.deb",
+          "version": "2.10-5"
+        }
+      ]
+    },
+    "arm64": {
+      "base": {
+        "bytes": 49761105,
+        "sha256": "df9831efb49cab24dec437e8482f2a9ddbd9e239131fa3ffe095dc1492081e1d",
+        "url": "https://raw.githubusercontent.com/debuerreotype/docker-debian-artifacts/cf1f4a45447842b45e9952e0f018ae734a7341c7/trixie/oci/blobs/rootfs.tar.gz"
+      },
+      "index": {
+        "sha256": "be16b37b2f740f066ea93d35d56f04f94d63693e5a3eb421b052bf86fae75bcd",
+        "url": "https://deb.debian.org/debian/dists/trixie/main/binary-arm64/Packages.xz"
+      },
+      "packages": {
+        "adduser": {
+          "architecture": "all",
+          "bytes": 190932,
+          "package": "adduser",
+          "sha256": "e50984d2e1ef6300e3fd51303839842189a077b10cb5cadff1923df10c61c493",
+          "url": "https://deb.debian.org/debian/pool/main/a/adduser/adduser_3.152_all.deb",
+          "version": "3.152"
+        },
+        "bubblewrap": {
+          "architecture": "arm64",
+          "bytes": 54820,
+          "package": "bubblewrap",
+          "sha256": "d1ac1d0d81c815fc15842b9f04fdf414830ed14a0a602bf6344740f90bb36c00",
+          "url": "https://deb.debian.org/debian/pool/main/b/bubblewrap/bubblewrap_0.12.0-1~deb13u1_arm64.deb",
+          "version": "0.12.0-1~deb13u1"
+        },
+        "ca-certificates": {
+          "architecture": "all",
+          "bytes": 161704,
+          "package": "ca-certificates",
+          "sha256": "ef590f89563aa4b46c8260d49d1cea0fc1b181d19e8df3782694706adf05c184",
+          "url": "https://deb.debian.org/debian/pool/main/c/ca-certificates/ca-certificates_20250419_all.deb",
+          "version": "20250419"
+        },
+        "less": {
+          "architecture": "arm64",
+          "bytes": 156476,
+          "package": "less",
+          "sha256": "dbce2dd7c649fc7a4273f173c8260fc595b05c56cc2ea859298fbb96d6749fed",
+          "url": "https://deb.debian.org/debian/pool/main/l/less/less_668-1_arm64.deb",
+          "version": "668-1"
+        },
+        "libpcre2-16-0": {
+          "architecture": "arm64",
+          "bytes": 247100,
+          "package": "libpcre2-16-0",
+          "sha256": "5cbc3acabe6d7d6533a9e24764d9566f3aaad208ec6309bb186fe2fa6962c35e",
+          "url": "https://deb.debian.org/debian/pool/main/p/pcre2/libpcre2-16-0_10.46-1~deb13u2_arm64.deb",
+          "version": "10.46-1~deb13u2"
+        },
+        "openssl": {
+          "architecture": "arm64",
+          "bytes": 1472236,
+          "package": "openssl",
+          "sha256": "ff38f9e4fdbfef72d9cb31088e5e42f58c83c2fb1d1bbb4e4b4c9adc53c17100",
+          "url": "https://deb.debian.org/debian/pool/main/o/openssl/openssl_3.5.7-1~deb13u2_arm64.deb",
+          "version": "3.5.7-1~deb13u2"
+        },
+        "systemd-standalone-sysusers": {
+          "architecture": "arm64",
+          "bytes": 160936,
+          "package": "systemd-standalone-sysusers",
+          "sha256": "8b1e61611a6d443ef1db288051fe2b32f7ca3e3dcf38675207c35733316058a8",
+          "url": "https://deb.debian.org/debian/pool/main/s/systemd/systemd-standalone-sysusers_257.13-1~deb13u1_arm64.deb",
+          "version": "257.13-1~deb13u1"
+        },
+        "uuid-runtime": {
+          "architecture": "arm64",
+          "bytes": 62936,
+          "package": "uuid-runtime",
+          "sha256": "6a9b824485514feb65cf4bb52a49ffabdecc2d60bbde8d65e72a580225cacbbd",
+          "url": "https://deb.debian.org/debian/pool/main/u/util-linux/uuid-runtime_2.41.5-0+deb13u1_arm64.deb",
+          "version": "2.41.5-0+deb13u1"
+        },
+        "vim-common": {
+          "architecture": "all",
+          "bytes": 420760,
+          "package": "vim-common",
+          "sha256": "bcf7e3e675cbc4eed1f444ea3a6dfbf420eae141615b0d35cee24cf23e18aa18",
+          "url": "https://deb.debian.org/debian/pool/main/v/vim/vim-common_9.1.1230-2_all.deb",
+          "version": "2:9.1.1230-2"
+        },
+        "vim-tiny": {
+          "architecture": "arm64",
+          "bytes": 708888,
+          "package": "vim-tiny",
+          "sha256": "1b2c9db8269961cdb55ab4c1e91994013a33825bc6d5d5d40a5f6136a8687992",
+          "url": "https://deb.debian.org/debian/pool/main/v/vim/vim-tiny_9.1.1230-2_arm64.deb",
+          "version": "2:9.1.1230-2"
+        }
+      },
+      "transactions": [
+        {
+          "bytes": 52308,
+          "sha256": "f7b20d304db0f3a18da28eb2000de2b0205eaa340c1d0fecec3b7c50acc932dc",
+          "url": "https://deb.debian.org/debian/pool/main/h/hello/hello_2.10-3_arm64.deb",
+          "version": "2.10-3"
+        },
+        {
+          "bytes": 52660,
+          "sha256": "7a917c7f44fbd3373dff0f35a0b6bdf8ef564ff90579d8b130ff52fbf33fce1f",
+          "url": "https://deb.debian.org/debian/pool/main/h/hello/hello_2.10-5_arm64.deb",
+          "version": "2.10-5"
+        }
+      ]
+    }
+  },
+  "purpose": "Existing official Debian packages only; this fixture never builds a Debian package.",
+  "schema": 1
+}
