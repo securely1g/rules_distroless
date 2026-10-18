@@ -7,6 +7,7 @@ e2e/no_gpg_keys/MODULE.bazel.lock
 e2e/invalid_key/stderr.log
 e2e/no_gpg_keys/stderr.log
 bazel-*
+__pycache__/
 .bazelrc.user
 .idea/
 .ijwb/

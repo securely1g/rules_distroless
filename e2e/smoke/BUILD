@@ -153,5 +153,7 @@ build_test(
     target_compatible_with = COMPATIBLE_WITH,
     targets = [
         "@bullseye//tzdata",
+        "@bullseye//tzdata:deb",
+        "@bullseye//bash:deb",
     ],
 )

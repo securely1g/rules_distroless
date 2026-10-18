@@ -1,0 +1,29 @@
+"""Native, offline APT installation tests with existing Debian packages."""
+
+module(name = "apt_install_test")
+
+bazel_dep(name = "rules_distroless", version = "0.0.0")
+local_path_override(
+    module_name = "rules_distroless",
+    path = "../..",
+)
+
+bazel_dep(name = "rules_python", version = "1.5.1")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    ignore_root_user_error = True,  # The installer requires real ownership changes in its container.
+    python_version = "3.13",
+)
+
+bazel_dep(name = "tar.bzl", version = "0.10.4")
+
+tar_toolchains = use_extension("@tar.bzl//tar:extensions.bzl", "toolchains")
+use_repo(tar_toolchains, "bsd_tar_toolchains_linux_amd64", "bsd_tar_toolchains_linux_arm64")
+
+fixtures = use_repo_rule("//:fixtures.bzl", "fixture_repository")
+
+fixtures(
+    name = "apt_fixture",
+    lock = "//:packages.lock.json",
+)
