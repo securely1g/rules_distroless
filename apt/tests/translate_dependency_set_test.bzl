@@ -144,6 +144,9 @@ def _check_template_variable_collision_test(ctx):
     asserts.equals(env, "suite", check_template_variable_collision({
         "suite": "bookworm",
     }))
+    asserts.equals(env, "deb_targets", check_template_variable_collision({
+        "deb_targets": "unverified.deb",
+    }))
 
     return unittest.end(env)
 
