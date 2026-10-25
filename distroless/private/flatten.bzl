@@ -28,7 +28,7 @@ def _flatten_impl(ctx):
         outputs = [output],
         tools = [
             bsdtar.default.files,
-            ctx.executable._gawk,
+            ctx.attr._gawk[DefaultInfo].files_to_run,
             coreutils.default.files,
         ],
         arguments = [args],
@@ -61,7 +61,6 @@ Deduplication is performed only for directories.
         ),
         "_flatten_sh": attr.label(default = "//distroless/private:flatten.sh", executable = True, cfg = "exec", allow_single_file = True),
         "_gawk": attr.label(
-            allow_single_file = True,
             executable = True,
             cfg = "exec",
             default = "@ape//ape:awk",
