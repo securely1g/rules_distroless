@@ -16,6 +16,12 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_distroless//apt/private:cc_deb_library.bzl", "cc_deb_library")
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 
+filegroup(
+    name = "deb",
+    srcs = ["package.deb"],
+    visibility = ["//visibility:public"],
+)
+
 deb_postfix(
     name = "data",
     srcs = glob(["data.tar*"]),
@@ -451,10 +457,14 @@ so_library(
     return (build_file_content, outs, symlinks)
 
 def _deb_import_impl(rctx):
-    rctx.download_and_extract(
+    # Keep the verified original archive for callers that need dpkg to perform
+    # a real installation, including maintainer scripts and triggers.
+    rctx.download(
         url = rctx.attr.urls,
         sha256 = rctx.attr.sha256,
+        output = "package.deb",
     )
+    rctx.extract("package.deb")
 
     # Rebuild the {file: canonical_name(dependency_repo)} index from each dependency's own filemap.
     # The first dependency that provides a path wins.
