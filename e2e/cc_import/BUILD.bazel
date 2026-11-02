@@ -1,0 +1,10 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+cc_test(
+    name = "import_test",
+    srcs = ["import_test.c"],
+    args = ["$(rootpath @trixie_libzstd1-amd64_1.5.7-dfsg-1//:usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7)"],
+    data = ["@trixie_libzstd1-amd64_1.5.7-dfsg-1//:usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"],
+    linkopts = ["-ldl"],
+    deps = ["@zstd_dev//:libzstd"],
+)

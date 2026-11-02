@@ -11,7 +11,7 @@ _DEB_IMPORT_BUILD_TMPL = '''
 load("@rules_distroless//apt/private:deb_postfix.bzl", "deb_postfix")
 load("@rules_distroless//apt/private:deb_export.bzl", "deb_export")
 load("@rules_distroless//apt/private:so_library.bzl", "so_library")
-load("@rules_cc//cc/private/rules_impl:cc_import.bzl", "cc_import")
+load("@rules_cc//cc:cc_import.bzl", "cc_import")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_distroless//apt/private:cc_deb_library.bzl", "cc_deb_library")
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
@@ -77,7 +77,6 @@ _CC_IMPORT_TMPL = """
 cc_import(
     name = "{name}",
     hdrs = {hdrs},
-    includes = {includes},
     linkopts = {linkopts},
     shared_library = {shared_lib},
     static_library = {static_lib},
@@ -89,6 +88,7 @@ cc_library(
     name = "{name}_wodeps",
     hdrs = {hdrs},
     deps = {direct_deps},
+    includes = {includes},
     linkopts = {linkopts},
     additional_compiler_inputs = {additional_compiler_inputs},
     additional_linker_inputs = {additional_linker_inputs},
@@ -377,16 +377,19 @@ so_library(
                     shared_lib = shared_lib,
                     static_lib = static_lib,
                     hdrs = [],
-                    includes = {
-                        "external/.." + include: True
-                        for include in includes + ["/usr/include", "/usr/include/x86_64-linux-gnu"]
-                    }.keys(),
                     linkopts = pkgc.linkopts,
                 )
 
         build_file_content += _CC_LIBRARY_TMPL.format(
             name = target_name,
             hdrs = h_files + hpp_files,
+            # cc_library normalizes these paths relative to the generated
+            # repository on every supported Bazel version. Native cc_import
+            # on Bazel 7/8 passes its includes through without that mapping.
+            includes = {
+                include.removeprefix("/"): True
+                for include in includes + ["/usr/include", "/usr/include/x86_64-linux-gnu"]
+            }.keys(),
             additional_compiler_inputs = hpp_files_woext,
             additional_linker_inputs = so_files + o_files,
             linkopts = {

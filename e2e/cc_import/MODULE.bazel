@@ -1,0 +1,10 @@
+module(name = "public_cc_import_consumer")
+
+bazel_dep(name = "rules_distroless", version = "0.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+
+local_path_override(module_name = "rules_distroless", path = "../..")
+
+packages = use_extension("//:packages.bzl", "packages")
+use_repo(packages, "zstd_dev", "trixie_libzstd1-amd64_1.5.7-dfsg-1")

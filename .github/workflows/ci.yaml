@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, codex/cc-import-awk-base]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -73,7 +73,7 @@ jobs:
   # above vary and can't be pinned individually in branch protection rules.
   ci:
     if: ${{ !cancelled() }}
-    needs: [test]
+    needs: [test, cc_import]
     runs-on: ubuntu-latest
     steps:
       - name: Check matrix job results
@@ -82,3 +82,16 @@ jobs:
             echo "One or more matrix jobs failed: ${{ needs.test.result }}"
             exit 1
           fi
+          if [[ "${{ needs.cc_import.result }}" != "success" ]]; then
+            echo "Public cc_import regression failed"
+            exit 1
+          fi
+
+  cc_import:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: bazel-contrib/setup-bazel@0.19.0
+      - name: Import and execute the pinned Debian library on Bazel 8
+        run: USE_BAZEL_VERSION=8.5.1 bazel test --test_output=errors //:import_test
+        working-directory: e2e/cc_import
