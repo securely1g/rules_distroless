@@ -43,6 +43,9 @@ jobs:
       - if: ${{ !matrix.workspace.expect_failure_log }}
         run: USE_BAZEL_VERSION=${{ matrix.bazel-version }} bazel test //...
         working-directory: ${{ matrix.workspace.dir }}
+      - name: Test cross-output-base APT repository caching
+        if: matrix.workspace.name == 'root' && matrix.os == 'ubuntu-latest' && matrix.bazel-version == '8.x'
+        run: python3 apt/tests/repository_cache_test.py
       - if: ${{ matrix.workspace.expect_failure_log }}
         run: |
           if USE_BAZEL_VERSION=${{ matrix.bazel-version }} bazel build //... > stderr.log 2>&1; then

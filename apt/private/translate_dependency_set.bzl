@@ -1,6 +1,7 @@
 "repository rule for generating a dependency graph from a lockfile."
 
 load(":lockfile.bzl", "lockfile")
+load(":repository_cache.bzl", "reproducible_repository")
 load(":starlark_codegen_utils.bzl", "starlark_codegen_utils")
 load(":util.bzl", "util")
 load(":version.bzl", version_lib = "version")
@@ -327,6 +328,7 @@ Please unify the versions manually, or use separate `apt.install` calls (with di
         packages = starlark_codegen_utils.to_dict_list_attr(architectures_to_package_names),
         architectures = starlark_codegen_utils.to_list_attr(dependency_set["sets"].keys()),
     ))
+    return reproducible_repository(rctx)
 
 translate_dependency_set = repository_rule(
     implementation = _translate_dependency_set_impl,

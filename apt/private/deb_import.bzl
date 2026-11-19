@@ -4,6 +4,7 @@ load(":deb_archive.bzl", "data_archive", "host_bsdtar")
 load(":linker_script.bzl", "linker_script")
 load(":lockfile.bzl", "lockfile")
 load(":pkgconfig.bzl", "pkgconfig")
+load(":repository_cache.bzl", "reproducible_repository")
 load(":util.bzl", "util")
 
 # BUILD.bazel template
@@ -160,15 +161,11 @@ def _remap_linkopts(rctx, extract_dir, so_regular_files, self_files, depends_fil
     if not so_regular_files:
         return []
 
-    # `grep -I` skips binary (ELF) files, leaving only the text linker scripts.
-    scratch_paths = [extract_dir + "/" + so for so in so_regular_files]
-    grep = rctx.execute(
-        ["grep", "-I", "-l", "-e", "OUTPUT_FORMAT", "-e", "GROUP", "-e", "INPUT"] + scratch_paths,
-    )
-
     referenced = []
-    for script_path in grep.stdout.splitlines():
-        referenced += linker_script.files_to_remap(rctx.read(script_path))
+    for so in so_regular_files:
+        content = rctx.read(extract_dir + "/" + so)
+        if "\000" not in content and any([token in content for token in ["OUTPUT_FORMAT", "GROUP", "INPUT"]]):
+            referenced += linker_script.files_to_remap(content)
 
     result = linker_script.remap_linkopts(referenced, self_files, depends_file_map, rctx.attr.name)
 
@@ -287,7 +284,8 @@ def _discover_contents(rctx, depends_on, depends_file_map, target_name, mergedus
     # - pkgconfig files because we need them to generate cc targets.
     files_to_extract = so_regular_files + pc_files
     if files_to_extract:
-        rctx.execute(["mkdir", "-p", _EXTRACT_DIR])
+        rctx.file(_EXTRACT_DIR + "/.keep", "")
+        rctx.delete(_EXTRACT_DIR + "/.keep")
         result = rctx.execute(
             [tar, "-xf", archive, "-C", _EXTRACT_DIR] +
             ["./" + f for f in files_to_extract],
@@ -461,7 +459,7 @@ def _deb_import_impl(rctx):
     provided_by = {}
     for i in range(len(rctx.attr.dep_filemaps)):
         filemap_path = rctx.path(rctx.attr.dep_filemaps[i])
-        dep_repo = filemap_path.dirname.basename.removesuffix("_filemap")
+        dep_repo = rctx.attr.dep_filemaps[i].workspace_name.removesuffix("_filemap")
         for file in json.decode(rctx.read(filemap_path)):
             if file not in provided_by:
                 provided_by[file] = dep_repo
@@ -495,6 +493,9 @@ def _deb_import_impl(rctx):
         foreign_symlinks = foreign_symlinks,
         symlink_outs = symlinks.keys(),
     ))
+    if rctx.attr.sha256:
+        return reproducible_repository(rctx)
+    return None
 
 deb_import = repository_rule(
     implementation = _deb_import_impl,
