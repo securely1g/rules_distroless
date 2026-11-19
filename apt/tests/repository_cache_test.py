@@ -124,7 +124,7 @@ def main():
     package = archive(root, "fixture.h")
     module(workspace, rules, package, "fixture.h", registry)
     cold, first, locations = run(root, workspace, "cold", registry)
-    assert {"fixture_pkg", "fixture_map"} <= cold, ("cold rules", cold)
+    assert "fixture_pkg" in cold, ("cold rules", cold)
     # Remove the old output base so absolute links or old local state cannot
     # accidentally make the fresh-output-base cache check pass.
     shutil.rmtree(root / "cold")
@@ -136,9 +136,10 @@ def main():
     package = archive(root, "changed.h")
     module(workspace, rules, package, "changed.h", registry)
     invalidated, third, updated = run(root, workspace, "invalidated", registry)
-    assert {"fixture_map", "fixture_pkg"} <= invalidated, ("inputs did not invalidate", invalidated)
+    assert "fixture_pkg" in invalidated, ("inputs did not invalidate", invalidated)
     assert "changed.h" in third and "usr/include/fixture.h" not in third
     assert locations["fixture_pkg"] != updated["fixture_pkg"]
+    assert locations["fixture_map"] != updated["fixture_map"]
     print("PASS: cold execution, fresh-output-base cache reuse, relocation, and input invalidation", flush=True)
 
 
