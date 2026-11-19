@@ -70,12 +70,20 @@ bzl_library(
         ":deb_archive",
         ":linker_script",
         ":pkgconfig",
+        ":repository_cache",
     ],
 )
 
 bzl_library(
     name = "deb_filemap",
     srcs = ["deb_filemap.bzl"],
+    visibility = ["//apt:__subpackages__"],
+    deps = [":repository_cache"],
+)
+
+bzl_library(
+    name = "repository_cache",
+    srcs = ["repository_cache.bzl"],
     visibility = ["//apt:__subpackages__"],
 )
 
@@ -99,6 +107,7 @@ bzl_library(
     deps = [
         ":deb_postfix",
         ":lockfile",
+        ":repository_cache",
         ":starlark_codegen_utils",
         ":util",
         "//apt:defs",
